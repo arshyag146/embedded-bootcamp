@@ -37,6 +37,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define adc_max_value      1023
+#define motor_min_pulse    1000  // 1ms
 #define motor_max_pulse    2000  // 2ms
 /* USER CODE END PD */
 
