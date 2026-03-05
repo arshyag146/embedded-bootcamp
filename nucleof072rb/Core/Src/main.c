@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -87,14 +89,43 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-
+  Hal_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint8_t spi_buf[3];
+	  uint16_t adc_val = 0;
+
+	  //1. prepare the MCP (start bit, single ended, channel 0)
+	  spi_buff[0] = 0x01; // start bit
+	  spi_buff[1] = 0x80; // single ended and channel 0
+	  spi_buff[2] = 0x00; // dont care
+
+	  //2. select the ADC (chip select low)
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+
+	  //3. transmit command and recieve data
+	  if(HAL_SPI_TransmitRecieve(&hspi1, spi_buf, spi_buf, 3, 100) == HAL_OK)
+	  {
+		  // combine last 2 bits of byte 1 with all 8 bits of byte 2
+		  adc_val = ((spi_buf[1] & 0x03) << 8) | spi_buf[2];
+	  }
+
+	  //4. deselect adc chip
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+
+	  //5. map the 10 bits adc to pwm pulse
+	  uint32_t pulse_width = 1000 + (adc_val * 1000 / 1023);
+
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse_width);
+
+	  HAL_Delay(10);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
